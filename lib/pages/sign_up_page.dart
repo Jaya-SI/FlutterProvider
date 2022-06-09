@@ -1,6 +1,10 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:future_jobs/model/user_model.dart';
+import 'package:future_jobs/providers/auth_provider.dart';
+import 'package:future_jobs/providers/user_provider.dart';
 import 'package:future_jobs/theme.dart';
+import 'package:provider/provider.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -11,10 +15,23 @@ class _SignUpPageState extends State<SignUpPage> {
   TextEditingController nameController = TextEditingController(text: '');
   TextEditingController emailController = TextEditingController(text: '');
   TextEditingController passwordController = TextEditingController(text: '');
-  TextEditingController motivationController = TextEditingController(text: '');
+  TextEditingController goalController = TextEditingController(text: '');
+
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    var authProvider = Provider.of<AuthProvider>(context);
+    var userProvider = Provider.of<UserProvider>(context);
+    void showError(String message) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: redColor,
+          content: Text(message),
+        ),
+      );
+    }
+
     Widget header() {
       return Container(
         margin: EdgeInsets.only(top: 30),
@@ -224,7 +241,7 @@ class _SignUpPageState extends State<SignUpPage> {
               height: 8,
             ),
             TextFormField(
-              controller: motivationController,
+              controller: goalController,
               cursorColor: primaryColor,
               onChanged: (value) {
                 setState(() {});
@@ -260,24 +277,54 @@ class _SignUpPageState extends State<SignUpPage> {
         margin: EdgeInsets.only(top: 40),
         height: 45,
         width: double.infinity,
-        child: TextButton(
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
-                context, '/home', (route) => false);
-          },
-          style: TextButton.styleFrom(
-            backgroundColor: primaryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(66),
-            ),
-          ),
-          child: Text(
-            'Sign Up',
-            style: whiteTextStyle.copyWith(
-              fontWeight: medium,
-            ),
-          ),
-        ),
+        child: isLoading
+            ? Center(
+                child: CircularProgressIndicator(),
+              )
+            : TextButton(
+                onPressed: () async {
+                  if (emailController.text.isEmpty ||
+                      nameController.text.isEmpty ||
+                      passwordController.text.isEmpty ||
+                      goalController.text.isEmpty) {
+                    showError('Semua Field Harus Di isi');
+                  } else {
+                    setState(() {
+                      isLoading = true;
+                    });
+                    UserModel user = await authProvider.register(
+                      nameController.text,
+                      emailController.text,
+                      passwordController.text,
+                      goalController.text,
+                    );
+
+                    setState(() {
+                      isLoading = false;
+                    });
+
+                    if (user == null) {
+                      showError('Email sudah Terdaftar');
+                    } else {
+                      userProvider.user = user;
+                      Navigator.pushNamedAndRemoveUntil(
+                          context, '/home', (route) => false);
+                    }
+                  }
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(66),
+                  ),
+                ),
+                child: Text(
+                  'Sign Up',
+                  style: whiteTextStyle.copyWith(
+                    fontWeight: medium,
+                  ),
+                ),
+              ),
       );
     }
 
