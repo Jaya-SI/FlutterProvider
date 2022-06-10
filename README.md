@@ -1,4 +1,4 @@
-# future_jobs
+# jobs_app
 
 A new Flutter project.
 
